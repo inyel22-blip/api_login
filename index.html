@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard API ATEI BARTIM v7 - Full Integrated</title>
+    <title>Dashboard API ATEI BARTIM v8 - Scrollable Unit</title>
     <style>
         body { font-family: Arial, sans-serif; padding: 15px; background-color: #f4f6f9; color: #333; }
         .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); max-width: 500px; margin: 0 auto 15px auto; }
@@ -36,7 +36,7 @@
         <input type="password" id="login_password" placeholder="Masukkan Password">
     </div>
     <div class="form-group">
-        <label>Token Sesi Aktif (Otomatis Terisi Setelah Login)</label>
+        <label>Token Sesi Aktif</label>
         <input type="text" id="auth_token" placeholder="Belum login (Token kosong)" readonly style="background-color: #e9ecef;">
     </div>
     <button type="button" class="btn-green" onclick="prosesLoginV3()">🔑 Login &amp; Simpan Token Sesi</button>
@@ -60,7 +60,7 @@
         </div>
     </div>
     <div class="form-group">
-        <label>Token Hash QR (Tempel Manual / Otomatis)</label>
+        <label>Token Hash QR</label>
         <input type="text" id="qrHash" placeholder="Contoh: 754d9e84d0">
     </div>
     <button type="button" class="btn-blue" onclick="tempelQrClipboard()">📋 Tempel Token QR dari Clipboard</button>
@@ -77,11 +77,13 @@
     <button type="button" class="btn-blue" onclick="cekStatusHariIni()">🔍 Cek Status Presensi Hari Ini</button>
     <button type="button" class="btn-gray" onclick="cekRiwayatKehadiran()">📅 Cek Riwayat Kehadiran Pegawai</button>
     <button type="button" class="btn-cyan" onclick="cekSesiPerangkat()">🔑 Cek Sesi Perangkat (/user/check_session)</button>
-    <div class="form-group" style="margin-top: 12px; border-top: 1px solid #eee; padding-top: 12px;">
-        <label>ID Unit / Instansi (Kosongkan untuk cek semua unit)</label>
-        <input type="text" id="unitId" value="31" placeholder="Contoh: 31">
+    
+    <div style="margin-top: 12px; border-top: 1px solid #eee; padding-top: 12px;">
+        <button type="button" class="btn-orange" onclick="cekDataUnit()">🏢 Muat Daftar Semua Unit (GET /unit)</button>
+        <div id="wadah-unit" style="margin-top: 10px; max-height: 300px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 4px; background: #fafafa; font-size: 13px;">
+            <p style="color: #777; text-align: center; margin: 0;">Klik tombol jingga di atas untuk menampilkan daftar unit.</p>
+        </div>
     </div>
-    <button type="button" class="btn-orange" onclick="cekDataUnit()">🏢 Cek Data Unit (GET /unit/{id})</button>
 </div>
 
 <div class="card">
@@ -212,7 +214,44 @@ function cekRekapHarianAdmin() { window.open('https://baritotimurkab.go.id', '_b
 function cekStatusHariIni() { callApiLive('GET', `/user/check_status_hari_ini?id=${val('userId')}`); }
 function cekRiwayatKehadiran() { callApiLive('GET', `/user/get_history?id=${val('userId')}`); }
 function cekSesiPerangkat() { callApiLive('GET', `/user/check_session?id=${val('userId')}`); }
-function cekDataUnit() { const idUnit = val('unitId'); callApiLive('GET', idUnit ? `/unit/${idUnit}` : '/unit'); }
+
+async function cekDataUnit() {
+    const wadah = document.getElementById('wadah-unit');
+    wadah.innerHTML = '<p style="text-align: center; color: #666;">⏳ Sedang memuat daftar seluruh unit...</p>';
+
+    const savedToken = localStorage.getItem('bearer_token') || val('auth_token');
+    const headersGabungan = { ...DEVICE_HEADERS };
+    if (savedToken) { headersGabungan['Authorization'] = `Bearer ${savedToken}`; }
+
+    try {
+        const respons = await fetch(`${BASE_URL}/unit`, { method: 'GET', headers: headersGabungan });
+        const hasil = await respons.json();
+        
+        if (!respons.ok) {
+            wadah.innerHTML = `<p style="color: red;">❌ Ditolak Server [${respons.status}]: ${hasil.message || 'Gagal'}</p>`;
+            return;
+        }
+
+        const daftar = Array.isArray(hasil) ? hasil : (hasil.data || []);
+        if (daftar.length === 0) {
+            wadah.innerHTML = '<p style="text-align: center;">📭 Data unit kosong.</p>';
+            return;
+        }
+
+        wadah.innerHTML = '';
+        daftar.forEach(u => {
+            wadah.innerHTML += `
+                <div style="border-bottom: 1px solid #ddd; padding: 8px 0;">
+                    <strong style="color: #0275d8;">[ID: ${u.id}] ${u.nm_unit}</strong><br>
+                    📍 Lat/Lng: ${u.lat}, ${u.long} (Radius: ${u.radius}m)<br>
+                    🔑 QR In: <code style="background:#eee;padding:2px 4px;">${u.qr_in}</code> | QR Out: <code style="background:#eee;padding:2px 4px;">${u.qr_out}</code>
+                </div>
+            `;
+        });
+    } catch (e) {
+        wadah.innerHTML = `<p style="color: red;">❌ Gagal memuat: ${e.message}</p>`;
+    }
+}
 
 async function tampilkanBannerVisual() {
     const wadah = document.getElementById('wadah-banner');

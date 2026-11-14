@@ -79,6 +79,7 @@
     <button type="button" class="btn-cyan" onclick="cekSesiPerangkat()">🔑 Cek Sesi Perangkat (/user/check_session)</button>
     
     <div style="margin-top: 12px; border-top: 1px solid #eee; padding-top: 12px;">
+        <input type="text" id="cariUnit" onkeyup="filterDaftarUnit()" placeholder="🔍 Ketik ID (misal: 31) atau nama instansi..." style="margin-top: 8px; margin-bottom: 8px;">
         <button type="button" class="btn-orange" onclick="cekDataUnit()">🏢 Muat Daftar Semua Unit (GET /unit)</button>
         <div id="wadah-unit" style="margin-top: 10px; max-height: 300px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 4px; background: #fafafa; font-size: 13px;">
             <p style="color: #777; text-align: center; margin: 0;">Klik tombol jingga di atas untuk menampilkan daftar unit.</p>
@@ -250,6 +251,20 @@ async function cekDataUnit() {
         });
     } catch (e) {
         wadah.innerHTML = `<p style="color: red;">❌ Gagal memuat: ${e.message}</p>`;
+    }
+}
+    function filterDaftarUnit() {
+    const kataKunci = val('cariUnit').toLowerCase();
+    const wadah = document.getElementById('wadah-unit');
+    const itemUnit = wadah.getElementsByTagName('div');
+
+    for (let i = 0; i < itemUnit.length; i++) {
+        const teksItem = itemUnit[i].textContent || itemUnit[i].innerText;
+        if (teksItem.toLowerCase().indexOf(kataKunci) > -1) {
+            itemUnit[i].style.display = "";
+        } else {
+            itemUnit[i].style.display = "none";
+        }
     }
 }
 

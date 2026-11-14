@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard API ATEI BARTIM v7 - Full Integrated</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 15px; background-color: #f4f6f9; color: #333; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); max-width: 500px; margin: 0 auto 15px auto; }
+        h2, h3 { color: #0275d8; text-align: center; margin-top: 0; }
+        .form-group { margin-bottom: 12px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 13px; }
+        input[type="text"], input[type="password"] { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 14px; }
+        .row { display: flex; gap: 10px; }
+        .row .form-group { flex: 1; }
+        button { width: 100%; padding: 12px; margin-bottom: 8px; border: none; border-radius: 4px; font-weight: bold; color: white; cursor: pointer; font-size: 14px; display: block; }
+        .btn-blue { background-color: #0275d8; }
+        .btn-gray { background-color: #6c757d; }
+        .btn-orange { background-color: #f0ad4e; }
+        .btn-green { background-color: #5cb85c; }
+        .btn-purple { background-color: #6f42c1; }
+        .btn-cyan { background-color: #17a2b8; }
+        .btn-red { background-color: #d9534f; }
+    </style>
+</head>
+<body>
+
+<!-- 1. KARTU AUTENTIKASI LOGIN V3 -->
+<div class="card">
+    <h3>🔐 1. Autentikasi Pengguna (api_login_v3)</h3>
+    
+    <div class="form-group">
+        <label>NIK (16 Digit)</label>
+        <input type="text" id="login_nik" placeholder="Masukkan 16 digit NIK">
+    </div>
+    
+    <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="login_password" placeholder="Masukkan Password">
+    </div>
+
+    <div class="form-group">
+        <label>Token Sesi Aktif (Otomatis Terisi Setelah Login)</label>
+        <input type="text" id="auth_token" placeholder="Belum login (Token kosong)" readonly style="background-color: #e9ecef;">
+    </div>
+
+    <button type="button" class="btn-green" onclick="prosesLoginV3()">🔑 Login &amp; Simpan Token Sesi</button>
+    <button type="button" class="btn-red" onclick="hapusTokenSesi()">🗑️ Hapus Token Sesi (Logout Lokal)</button>
+</div>
+
+<!-- 2. KARTU LOKASI & EKSEKUSI PRESENSI -->
+<div class="card">
+    <h3>📍 2. Verifikasi Lokasi &amp; Presensi</h3>
+    
+    <div class="form-group">
+        <label>ID Pegawai (User ID)</label>
+        <input type="text" id="userId" value="2682">
+    </div>
+
+    <div class="row">
+        <div class="form-group">
+            <label>Latitude</label>
+            <input type="text" id="lat" value="-2.116357">
+        </div>
+        <div class="form-group">
+            <label>Longitude</label>
+            <input type="text" id="lng" value="115.16722">
+        </div>
+    </div>
+    
+    <div class="form-group">
+        <label>Token Hash QR (Tempel Manual / Otomatis)</label>
+        <input type="text" id="qrHash" placeholder="Contoh: 754d9e84d0">
+    </div>
+
+    <button type="button" class="btn-blue" onclick="tempelQrClipboard()">📋 Tempel Token QR dari Clipboard</button>
+    <button type="button" class="btn-gray" onclick="ambilGpsAsli()">📌 Ambil GPS Browser</button>
+    <button type="button" class="btn-orange" onclick="verifikasiLokasi()">1. Verifikasi Lokasi (/user/verifikasi_loc)</button>
+    <button type="button" class="btn-green" onclick="kirimQrIn()">2. Kirim QR Check-In (/user/qr_in)</button>
+    <button type="button" class="btn-purple" onclick="kirimQrOut()">3. Kirim QR Check-Out (/user/qr_out)</button>
+    <button type="button" class="btn-cyan" onclick="generateTokenQr()">⚙️ Generate Token QR (/user/generate-token-qr)</button>
+    <button type="button" class="btn-red" onclick="cekRekapHarianAdmin()">📊 Buka Monitor Instansi (/qrscan)</button>
+</div>
+
+<!-- 3. KARTU STATUS & RIWAYAT PEGAWAI -->
+<div class="card">
+    <h2>👤 3. Data Pegawai &amp; Status</h2>
+    <button type="button" class="btn-blue" onclick="cekStatusHariIni()">🔍 Cek Status Presensi Hari Ini</button>
+    <button type="button" class="btn-gray" onclick="cekRiwayatKehadiran()">📅 Cek Riwayat Kehadiran Pegawai</button>
+    <button type="button" class="btn-cyan" onclick="cekSesiPerangkat()">🔑 Cek Sesi Perangkat (/user/check_session)</button>
+    <button type="button" class="btn-orange" onclick="cekOpdDenganPayload()">🏢 Cek Daftar OPD (POST /get_opd)</button>
+</div>
+
+<!-- 4. KARTU BANNER PENGUMUMAN VISUAL -->
+<div class="card">
+    <h3>🖼️ 4. Pengumuman &amp; Banner Aplikasi</h3>
+    <button type="button" class="btn-cyan" onclick="tampilkanBannerVisual()">🔄 Muat &amp; Tampilkan Banner (/banner)</button>
+    <div id="wadah-banner" style="margin-top: 15px;"></div>
+</div>
+
+<script>
+const BASE_URL = 'https://api-absen.baritotimurkab.go.id/public/api';
+
+const DEVICE_HEADERS = {
+    'Accept': 'application/json',
+    'Content-Type': 'application/json',
+    'x-install-id': '196a92ddad0a3c085da3980264ef91d9ea45a60cd7ea796f',
+    'x-device-platform': 'android',
+    'x-app-installer': 'com.android.vending',
+    'x-device-id': '40622cf44ad36bb1',
+    'x-app-package': 'com.digitalnative.atei_bartim'
+};
+
+window.onload = function() {
+    const tokenTersimpan = localStorage.getItem('bearer_token');
+    if (tokenTersimpan) {
+        document.getElementById('auth_token').value = tokenTersimpan;
+    }
+};
+
+function val(id) { 
+    return document.getElementById(id) ? document.getElementById(id).value.trim() : ""; 
+}
+
+function log(msg) { 
+    console.log(msg); 
+    alert(msg); 
+}
+
+function getTanggalLokal() {
+    const sekarang = new Date();
+    const offset = sekarang.getTimezoneOffset() * 60000;
+    return (new Date(sekarang - offset)).toISOString().split('T')[0];
+}
+
+async function prosesLoginV3() {
+    const nikInput = val('login_nik');
+    const passwordInput = val('login_password');
+
+    if (!nikInput || !passwordInput) {
+        alert('⚠️ Harap isi NIK dan Password terlebih dahulu.');
+        return;
+    }
+
+    const payloadLogin = {
+        nik: nikInput,
+        password: passwordInput,
+        device: {
+            install_id: DEVICE_HEADERS['x-install-id'],
+            platform: DEVICE_HEADERS['x-device-platform'],
+            device_id: DEVICE_HEADERS['x-device-id'],
+            package_name: DEVICE_HEADERS['x-app-package'],
+            installer_package_name: DEVICE_HEADERS['x-app-installer'],
+            is_expected_package: true
+        }
+    };
+
+    try {
+        const respons = await fetch(`${BASE_URL}/api_login_v3`, {
+            method: 'POST',
+            headers: DEVICE_HEADERS,
+            body: JSON.stringify(payloadLogin)
+        });
+
+        const hasilJson = await respons.json();
+
+        if (respons.ok) {
+            const tokenDiterima = hasilJson.token || (hasilJson.data && hasilJson.data.token) || hasilJson.access_token;
+
+            if (tokenDiterima) {
+                localStorage.setItem('bearer_token', tokenDiterima);
+                document.getElementById('auth_token').value = tokenDiterima;
+                alert('✅ Login Berhasil! Token sesi telah disimpan untuk seluruh tombol API.');
+            } else {
+                alert(`⚠️ Login 200 OK, periksa struktur token:\n${JSON.stringify(hasilJson, null, 2)}`);
+            }
+        } else {
+            alert(`❌ Login Ditolak [${respons.status}]:\n${JSON.stringify(hasilJson, null, 2)}`);
+        }
+    } catch (error) {
+        alert(`❌ Gagal terhubung ke server:\n${error.message}`);
+    }
+}
+
+function hapusTokenSesi() {
+    localStorage.removeItem('bearer_token');
+    document.getElementById('auth_token').value = '';
+    alert('🗑️ Token sesi lokal telah dihapus.');
+}
+
+async function callApiLive(method, endpoint, payload) {
+    const savedToken = localStorage.getItem('bearer_token') || val('auth_token');
+    
+    const headersGabungan = { ...DEVICE_HEADERS };
+    if (savedToken) {
+        headersGabungan['Authorization'] = `Bearer ${savedToken}`;
+    }
+
+    try {
+        const respons = await fetch(`${BASE_URL}${endpoint}`, {
+            method: method,
+            headers: headersGabungan,
+            body: method !== 'GET' ? JSON.stringify(payload) : null
+        });
+        const hasilJson = await respons.json();
+        alert(`Respons Server [${respons.status}]:\n${JSON.stringify(hasilJson, null, 2)}`);
+    } catch (error) {
+        alert(`❌ Gagal koneksi ke API Server!\nDetail: ${error.message}`);
+    }
+}
+
+function ambilGpsAsli() {
+    if (!navigator.geolocation) {
+        log('❌ Browser tidak mendukung Geolocation.');
+        return;
+    }
+    navigator.geolocation.getCurrentPosition(
+        (pos) => {
+            document.getElementById('lat').value = pos.coords.latitude.toFixed(6);
+            document.getElementById('lng').value = pos.coords.longitude.toFixed(6);
+            log(`✅ Koordinat diperbarui: ${pos.coords.latitude.toFixed(6)}, ${pos.coords.longitude.toFixed(6)}`);
+        },
+        (err) => { log(`❌ Gagal mengambil GPS: ${err.message}`); }
+    );
+}
+
+async function tempelQrClipboard() {
+    try {
+        const text = await navigator.clipboard.readText();
+        document.getElementById('qrHash').value = text.trim();
+        log('✅ Token berhasil ditempel!');
+    } catch (err) { log('❌ Gagal akses clipboard. Ketik manual.'); }
+}
+
+function verifikasiLokasi() {
+    callApiLive('POST', '/user/verifikasi_loc', {
+        id: parseInt(val('userId')),
+        latitude: val('lat'),
+        longitude: val('lng')
+    });
+}
+
+function kirimQrIn() {
+    const tgl = getTanggalLokal();
+    const token = val('qrHash');
+    if(!token) { log('⚠️ Isi Token Hash QR terlebih dahulu!'); return; }
+    callApiLive('POST', '/user/qr_in', {
+        id: parseInt(val('userId')),
+        date: tgl,
+        payload_in: `${tgl}-${token}`
+    });
+}
+
+function kirimQrOut() {
+    const tgl = getTanggalLokal();
+    const token = val('qrHash');
+    if(!token) { log('⚠️ Isi Token Hash QR terlebih dahulu!'); return; }
+    callApiLive('POST', '/user/qr_out', {
+        id: parseInt(val('userId')),
+        date: tgl,
+        payload_out: `${tgl}-${token}`
+    });
+}
+
+function generateTokenQr() {
+    callApiLive('GET', `/user/generate-token-qr?id=${val('userId')}`);
+}
+
+function cekRekapHarianAdmin() {
+    window.open('https://presensi.baritotimurkab.go.id/qrscan', '_blank');
+}
+
+function cekStatusHariIni() {
+    callApiLive('GET', `/user/check_status_hari_ini?id=${val('userId')}`);
+}
+
+function cekRiwayatKehadiran() {
+    callApiLive('GET', `/user/get_history?id=${val('userId')}`);
+}
+
+function cekSesiPerangkat() {
+    callApiLive('GET', `/user/check_session?id=${val('userId')}`);
+}
+
+function cekOpdDenganPayload() {
+    callApiLive('POST', '/get_opd', {
+        id: parseInt(val('userId')),
+        search: ""
+    });
+}
+
+async function tampilkanBannerVisual() {
+    const wadah = document.getElementById('wadah-banner');
+    wadah.innerHTML = '<p style="text-align: center; color: #666;">⏳ Mengambil data banner dari server...</p>';
+
+    try {
+        const savedToken = localStorage.getItem('bearer_token') || val('auth_token');
+        const headersGabungan = { ...DEVICE_HEADERS };
+        
+        if (savedToken) {
+            headersGabungan['Authorization'] = `Bearer ${savedToken}`;
+        }
+
+        const respons = await fetch(`${BASE_URL}/banner`, {
+            method: 'GET',
+            headers: headersGabungan
+        });
+
+        const hasilJson = await respons.json();
+
+        if (!respons.ok) {
+            wadah.innerHTML = `<p style="color: red;">❌ Server menolak permintaan [${respons.status}]: ${hasilJson.message || 'Gagal memuat'}</p>`;
+            return;
+        }
+
+        const daftarBanner = Array.isArray(hasilJson) ? hasilJson : (hasilJson.data || []);
+
+        if (daftarBanner.length === 0) {
+            wadah.innerHTML = '<p style="text-align: center; color: #666;">📭 Tidak ada data banner aktif saat ini.</p>';
+            return;
+        }
+
+        wadah.innerHTML = '';
+        daftarBanner.forEach((item, index) => {
+            const judul = item.title || item.judul || item.nama || `Pengumuman #${index + 1}`;
+            const deskripsi = item.description || item.deskripsi || item.content || '';
+            const tautan = item.link || item.url || item.redirect_url || '#';
+            let urlGambar = item.image || item.gambar || item.banner || item.foto || '';
+
+            if (urlGambar && !urlGambar.startsWith('http')) {
+                urlGambar = `https://api-absen.baritotimurkab.go.id/storage/${urlGambar.replace(/^\/+/, '')}`;
+            }
+
+            const kartuBanner = `
+                <div style="border: 1px solid #ddd; border-radius: 6px; padding: 12px; margin-bottom: 12px; background: #fafafa;">
+                    ${urlGambar ? `<img src="${urlGambar}" alt="${judul}" style="width: 100%; border-radius: 4px; margin-bottom: 8px; display: block;" onerror="this.style.display='none'">` : ''}
+                    <h4 style="margin: 0 0 6px 0; color: #0275d8;">${judul}</h4>
+                    ${deskripsi ? `<p style="margin: 0 0 8px 0; font-size: 13px; color: #444;">${deskripsi}</p>` : ''}
+                    ${tautan !== '#' ? `<a href="${tautan}" target="_blank" style="font-size: 12px; color: #17a2b8; text-decoration: none; font-weight: bold;">🔗 Buka Tautan Terkait &rarr;</a>` : ''}
+                </div>
+            `;
+            wadah.innerHTML += kartuBanner;
+        });
+
+    } catch (error) {
+        wadah.innerHTML = `<p style="color: red;">❌ Gagal terhubung ke server: ${error.message}</p>`;
+    }
+}
+</script>
+
+</body>
+</html>

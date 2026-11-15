@@ -63,27 +63,25 @@
         <label>Token Hash QR</label>
         <input type="text" id="qrHash" placeholder="Contoh: 754d9e84d0">
     </div>
-    <button type="button" class="btn-blue" onclick="tempelQrClipboard()">📋 Tempel Token QR dari Clipboard</button>
-    <button type="button" class="btn-gray" onclick="ambilGpsAsli()">📌 Ambil GPS Browser</button>
-    <button type="button" class="btn-orange" onclick="verifikasiLokasi()">📍 1. Verifikasi Lokasi (/user/verifikasi_loc)</button>
-    <button type="button" class="btn-green" onclick="kirimQrIn()">2. Kirim QR Check-In (/user/qr_in)</button>
-    <button type="button" class="btn-purple" onclick="kirimQrOut()">3. Kirim QR Check-Out (/user/qr_out)</button>
-    <button type="button" class="btn-cyan" onclick="generateTokenQr()">⚙️ Generate Token QR (/user/generate-token-qr)</button>
-    <button type="button" class="btn-red" onclick="cekRekapHarianAdmin()">📊 Buka Monitor Instansi (/qrscan)</button>
+    <button type="button" class="btn-orange" onclick="verifikasiLokasi()">📍 1. Verifikasi Lokasi</button>
+    <button type="button" class="btn-green" onclick="kirimQrIn()">2. Kirim QR Check-In</button>
+    <button type="button" class="btn-purple" onclick="kirimQrOut()">3. Kirim QR Check-Out</button>
+    <button type="button" class="btn-cyan" onclick="generateTokenQr()">⚙️ Generate Token QR</button>
+    <button type="button" class="btn-red" onclick="cekRekapHarianAdmin()">📊 Buka Monitor Instansi</button>
 </div>
 
 <div class="card">
     <h2>👤 3. Data Pegawai, Status &amp; Unit</h2>
     <button type="button" class="btn-blue" onclick="cekStatusHariIni()">🔍 Cek Status Presensi Hari Ini</button>
     <button type="button" class="btn-gray" onclick="cekRiwayatKehadiran()">📅 Cek Riwayat Kehadiran Pegawai</button>
-    <button type="button" class="btn-cyan" onclick="cekSesiPerangkat()">🔑 Cek Sesi Perangkat (/user/check_session)</button>
-    <button type="button" class="btn-blue" onclick="cekProfilUser()" style="background: #6f42c1;">👤 Cek Profil Pegawai (/user)</button>
-    <button type="button" class="btn-blue" onclick="cekRekapBulanan()" style="background: #008080;">📊 Cek Rekap Bulanan (/user/get_rekap_bulanan_v2)</button>
+    <button type="button" class="btn-cyan" onclick="cekSesiPerangkat()">🔑 Cek Sesi Perangkat</button>
+    <button type="button" class="btn-blue" onclick="cekProfilUser()" style="background: #6f42c1;">👤 Cek Profil Pegawai</button>
+    <button type="button" class="btn-blue" onclick="cekRekapBulanan()" style="background: #008080;">📊 Cek Rekap Bulanan</button>
 
 
     <div style="margin-top: 12px; border-top: 1px solid #eee; padding-top: 12px;">
         <input type="text" id="cariUnit" onkeyup="filterDaftarUnit()" placeholder="🔍 Ketik ID (misal: 31) atau nama instansi..." style="margin-top: 8px; margin-bottom: 8px;">
-        <button type="button" class="btn-orange" onclick="cekDataUnit()">🏢 Muat Daftar Semua Unit (GET /unit)</button>
+        <button type="button" class="btn-orange" onclick="cekDataUnit()">🏢 Muat Daftar Semua Unit</button>
         <div id="wadah-unit" style="margin-top: 10px; max-height: 300px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 4px; background: #fafafa; font-size: 13px;">
             <p style="color: #777; text-align: center; margin: 0;">Klik tombol jingga di atas untuk menampilkan daftar unit.</p>
         </div>

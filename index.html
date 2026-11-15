@@ -211,7 +211,7 @@ function verifikasiLokasi() { callApiLive('POST', '/user/verifikasi_loc', { id: 
 function kirimQrIn() { const tgl = getTanggalLokal(); const token = val('qrHash'); if(!token) { log('⚠️ Isi Token Hash QR terlebih dahulu!'); return; } callApiLive('POST', '/user/qr_in', { id: parseInt(val('userId')), date: tgl, payload_in: `${tgl}-${token}` }); }
 function kirimQrOut() { const tgl = getTanggalLokal(); const token = val('qrHash'); if(!token) { log('⚠️ Isi Token Hash QR terlebih dahulu!'); return; } callApiLive('POST', '/user/qr_out', { id: parseInt(val('userId')), date: tgl, payload_out: `${tgl}-${token}` }); }
 function generateTokenQr() { callApiLive('GET', `/user/generate-token-qr?id=${val('userId')}`); }
-function cekRekapHarianAdmin() { window.open('https://presensi.baritotimurkab.go.id/qr', '_blank'); }
+function cekRekapHarianAdmin() { window.open('https://presensi.baritotimurkab.go.id', '_blank'); }
 function cekStatusHariIni() { callApiLive('GET', `/user/check_status_hari_ini?id=${val('userId')}`); }
 function cekRiwayatKehadiran() { callApiLive('GET', `/user/get_history?id=${val('userId')}`); }
 function cekSesiPerangkat() { callApiLive('GET', `/user/check_session?id=${val('userId')}`); }

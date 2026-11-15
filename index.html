@@ -65,7 +65,7 @@
     </div>
     <button type="button" class="btn-blue" onclick="tempelQrClipboard()">📋 Tempel Token QR dari Clipboard</button>
     <button type="button" class="btn-gray" onclick="ambilGpsAsli()">📌 Ambil GPS Browser</button>
-    <button type="button" class="btn-orange" onclick="verifikasiLokasi()">1. Verifikasi Lokasi (/user/verifikasi_loc)</button>
+    <button type="button" class="btn-orange" onclick="verifikasiLokasi()">📍 1. Verifikasi Lokasi (/user/verifikasi_loc)</button>
     <button type="button" class="btn-green" onclick="kirimQrIn()">2. Kirim QR Check-In (/user/qr_in)</button>
     <button type="button" class="btn-purple" onclick="kirimQrOut()">3. Kirim QR Check-Out (/user/qr_out)</button>
     <button type="button" class="btn-cyan" onclick="generateTokenQr()">⚙️ Generate Token QR (/user/generate-token-qr)</button>
@@ -77,7 +77,10 @@
     <button type="button" class="btn-blue" onclick="cekStatusHariIni()">🔍 Cek Status Presensi Hari Ini</button>
     <button type="button" class="btn-gray" onclick="cekRiwayatKehadiran()">📅 Cek Riwayat Kehadiran Pegawai</button>
     <button type="button" class="btn-cyan" onclick="cekSesiPerangkat()">🔑 Cek Sesi Perangkat (/user/check_session)</button>
-    
+    <button type="button" class="btn-blue" onclick="cekProfilUser()" style="background: #6f42c1;">👤 Cek Profil Pegawai (/user)</button>
+    <button type="button" class="btn-blue" onclick="cekRekapBulanan()" style="background: #008080;">📊 Cek Rekap Bulanan (/user/get_rekap_bulanan_v2)</button>
+
+
     <div style="margin-top: 12px; border-top: 1px solid #eee; padding-top: 12px;">
         <input type="text" id="cariUnit" onkeyup="filterDaftarUnit()" placeholder="🔍 Ketik ID (misal: 31) atau nama instansi..." style="margin-top: 8px; margin-bottom: 8px;">
         <button type="button" class="btn-orange" onclick="cekDataUnit()">🏢 Muat Daftar Semua Unit (GET /unit)</button>
@@ -91,6 +94,13 @@
     <h3>🖼️ 4. Pengumuman &amp; Banner Aplikasi</h3>
     <button type="button" class="btn-cyan" onclick="tampilkanBannerVisual()">🔄 Muat &amp; Tampilkan Banner (/banner)</button>
     <div id="wadah-banner" style="margin-top: 15px;"></div>
+</div>
+<div class="card" style="background: #1e1e1e; color: #00ff00; font-family: monospace;">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+    <h3 style="color: #fff; margin: 0; font-size: 15px;">🖥️ Console Log API</h3>
+    <button type="button" onclick="document.getElementById('layar-console').innerHTML = ''" style="width: auto; padding: 5px 10px; margin: 0; background: #d9534f; font-size: 12px;">Bersihkan</button>
+  </div>
+  <div id="layar-console" style="max-height: 250px; overflow-y: auto; font-size: 12px; line-height: 1.4; white-space: pre-wrap; word-break: break-all;">Siap menerima log...</div>
 </div>
 <script>
 const BASE_URL = 'https://api-absen.baritotimurkab.go.id/public/api';
@@ -113,7 +123,6 @@ window.onload = function() {
 };
 
 function val(id) { return document.getElementById(id) ? document.getElementById(id).value.trim() : ""; }
-function log(msg) { console.log(msg); alert(msg); }
 
 function getTanggalLokal() {
     const sekarang = new Date();
@@ -122,45 +131,48 @@ function getTanggalLokal() {
 }
 
 async function prosesLoginV3() {
-    const nikInput = val('login_nik');
-    const passwordInput = val('login_password');
-    if (!nikInput || !passwordInput) { alert('⚠️ Harap isi NIK dan Password terlebih dahulu.'); return; }
+  const nikInput = val('login_nik');
+  const passwordInput = val('login_password');
+  if (!nikInput || !passwordInput) {
+    alert('⚠️ Harap isi NIK dan Password terlebih dahulu.');
+    return;
+  }
 
-    const payloadLogin = {
-        nik: nikInput,
-        password: passwordInput,
-        device: {
-            install_id: DEVICE_HEADERS['x-install-id'],
-            platform: DEVICE_HEADERS['x-device-platform'],
-            device_id: DEVICE_HEADERS['x-device-id'],
-            package_name: DEVICE_HEADERS['x-app-package'],
-            installer_package_name: DEVICE_HEADERS['x-app-installer'],
-            is_expected_package: true
-        }
-    };
-
-    try {
-        const respons = await fetch(`${BASE_URL}/api_login_v3`, {
-            method: 'POST',
-            headers: DEVICE_HEADERS,
-            body: JSON.stringify(payloadLogin)
-        });
-        const hasilJson = await respons.json();
-        if (respons.ok) {
-            const tokenDiterima = hasilJson.token || (hasilJson.data && hasilJson.data.token) || hasilJson.access_token;
-            if (tokenDiterima) {
-                localStorage.setItem('bearer_token', tokenDiterima);
-                document.getElementById('auth_token').value = tokenDiterima;
-                alert('✅ Login Berhasil! Token sesi telah disimpan.');
-            } else {
-                alert(`⚠️ Login 200 OK, periksa struktur token:\n${JSON.stringify(hasilJson, null, 2)}`);
-            }
-        } else {
-            alert(`❌ Login Ditolak [${respons.status}]:\n${JSON.stringify(hasilJson, null, 2)}`);
-        }
-    } catch (error) {
-        alert(`❌ Gagal terhubung ke server:\n${error.message}`);
+  const payloadLogin = {
+    nik: nikInput,
+    password: passwordInput,
+    device: {
+      install_id: DEVICE_HEADERS['x-install-id'],
+      platform: DEVICE_HEADERS['x-device-platform'],
+      device_id: DEVICE_HEADERS['x-device-id'],
+      package_name: DEVICE_HEADERS['x-app-package'],
+      installer_package_name: DEVICE_HEADERS['x-app-installer'],
+      is_expected_package: true
     }
+  };
+
+  try {
+    const respons = await fetch(`${BASE_URL}/api_login_v3`, {
+      method: 'POST',
+      headers: DEVICE_HEADERS,
+      body: JSON.stringify(payloadLogin)
+    });
+    const hasilJson = await respons.json();
+    if (respons.ok) {
+      const tokenDiterima = hasilJson.token || (hasilJson.data && hasilJson.data.token) || hasilJson.access_token;
+      if (tokenDiterima) {
+        localStorage.setItem('bearer_token', tokenDiterima);
+        document.getElementById('auth_token').value = tokenDiterima;
+        alert('✅ Login Berhasil!\n\nRespon Lengkap Server:\n' + JSON.stringify(hasilJson, null, 2));
+      } else {
+        alert('⚠️ Login 200 OK, periksa struktur token:\n' + JSON.stringify(hasilJson, null, 2));
+      }
+    } else {
+      alert('❌ Login Ditolak (' + respons.status + '):\n' + JSON.stringify(hasilJson, null, 2));
+    }
+  } catch (error) {
+    alert('❌ Gagal terhubung ke server:\n' + error.message);
+  }
 }
 
 function hapusTokenSesi() {
@@ -169,22 +181,33 @@ function hapusTokenSesi() {
     alert('🗑️ Token sesi lokal telah dihapus.');
 }
 
+function log(msg) {
+  console.log(msg);
+  const layar = document.getElementById('layar-console');
+  if (layar) {
+    const waktu = new Date().toLocaleTimeString('id-ID');
+    layar.innerHTML = `<div style="border-bottom: 1px solid #333; padding: 6px 0;"><span style="color: #888;">[${waktu}]</span> ${msg}</div>` + layar.innerHTML;
+  }
+}
 async function callApiLive(method, endpoint, payload) {
-    const savedToken = localStorage.getItem('bearer_token') || val('auth_token');
-    const headersGabungan = { ...DEVICE_HEADERS };
-    if (savedToken) { headersGabungan['Authorization'] = `Bearer ${savedToken}`; }
+  const savedToken = localStorage.getItem('bearer_token') || val('auth_token');
+  const headersGabungan = { ...DEVICE_HEADERS };
+  if (savedToken) { headersGabungan['Authorization'] = `Bearer ${savedToken}`; }
 
-    try {
-        const respons = await fetch(`${BASE_URL}${endpoint}`, {
-            method: method,
-            headers: headersGabungan,
-            body: method !== 'GET' ? JSON.stringify(payload) : null
-        });
-        const hasilJson = await respons.json();
-        alert(`Respons Server [${respons.status}]:\n${JSON.stringify(hasilJson, null, 2)}`);
-    } catch (error) {
-        alert(`❌ Gagal koneksi ke API Server!\nDetail: ${error.message}`);
-    }
+  log(`🚀 <b>${method} ${endpoint}</b>` + (payload ? `\nPayload: ${JSON.stringify(payload)}` : ''));
+
+  try {
+    const respons = await fetch(`${BASE_URL}${endpoint}`, {
+      method: method,
+      headers: headersGabungan,
+      body: method !== 'GET' ? JSON.stringify(payload) : null
+    });
+    const hasilJson = await respons.json();
+    const warna = respons.ok ? '#00ff00' : '#ff5555';
+    log(`<span style="color: ${warna};">📥 Status ${respons.status}:</span>\n${JSON.stringify(hasilJson, null, 2)}`);
+  } catch (error) {
+    log(`<span style="color: #ff5555;">❌ Error Koneksi:</span> ${error.message}`);
+  }
 }
 
 function ambilGpsAsli() {
@@ -211,10 +234,83 @@ function verifikasiLokasi() { callApiLive('POST', '/user/verifikasi_loc', { id: 
 function kirimQrIn() { const tgl = getTanggalLokal(); const token = val('qrHash'); if(!token) { log('⚠️ Isi Token Hash QR terlebih dahulu!'); return; } callApiLive('POST', '/user/qr_in', { id: parseInt(val('userId')), date: tgl, payload_in: `${tgl}-${token}` }); }
 function kirimQrOut() { const tgl = getTanggalLokal(); const token = val('qrHash'); if(!token) { log('⚠️ Isi Token Hash QR terlebih dahulu!'); return; } callApiLive('POST', '/user/qr_out', { id: parseInt(val('userId')), date: tgl, payload_out: `${tgl}-${token}` }); }
 function generateTokenQr() { callApiLive('GET', `/user/generate-token-qr?id=${val('userId')}`); }
-function cekRekapHarianAdmin() { window.open('https://presensi.baritotimurkab.go.id', '_blank'); }
+function cekRekapHarianAdmin() { window.open('https://baritotimurkab.go.id', '_blank'); }
 function cekStatusHariIni() { callApiLive('GET', `/user/check_status_hari_ini?id=${val('userId')}`); }
 function cekRiwayatKehadiran() { callApiLive('GET', `/user/get_history?id=${val('userId')}`); }
 function cekSesiPerangkat() { callApiLive('GET', `/user/check_session?id=${val('userId')}`); }
+
+async function cekProfilUser() {
+  const idPegawai = val('userId');
+  const savedToken = localStorage.getItem('bearer_token') || val('auth_token');
+  const headersGabungan = { ...DEVICE_HEADERS };
+  if (savedToken) { headersGabungan['Authorization'] = `Bearer ${savedToken}`; }
+
+  log(`🚀 <b>GET /user/${idPegawai}</b> (Sinkronisasi Profil & Koordinat...)`);
+
+  try {
+    const resUser = await fetch(`${BASE_URL}/user/${idPegawai}`, { method: 'GET', headers: headersGabungan });
+    const jsonUser = await resUser.json();
+
+    if (!resUser.ok) {
+      log(`<span style="color: #ff5555;">📥 Status ${resUser.status}:</span>\n${JSON.stringify(jsonUser, null, 2)}`);
+      return;
+    }
+
+    const dataUser = (jsonUser.data && jsonUser.data.user) ? jsonUser.data.user : (jsonUser.user || jsonUser.data || jsonUser);
+    log(`<span style="color: #00ff00;">📥 Profil Ditemukan:</span>\n${JSON.stringify(dataUser, null, 2)}`);
+
+    // 1. Langsung isi Latitude & Longitude dari data profil
+    if (dataUser.lat && dataUser.long) {
+      document.getElementById('lat').value = dataUser.lat;
+      document.getElementById('lng').value = dataUser.long;
+      log(`📍 <b>Koordinat Kantor Diisi:</b> <code>${dataUser.lat}, ${dataUser.long}</code> (${dataUser.nm_unit || '-'})`);
+    }
+
+        // 2. Cari kode QR In & QR Out otomatis berdasarkan rentang jam WIB
+    if (dataUser.nm_unit) {
+      const resUnit = await fetch(`${BASE_URL}/unit`, { method: 'GET', headers: headersGabungan });
+      const jsonUnit = await resUnit.json();
+      const daftarUnit = Array.isArray(jsonUnit) ? jsonUnit : (jsonUnit.data || []);
+      const unitCocok = daftarUnit.find(u => u.nm_unit && u.nm_unit.toLowerCase() === dataUser.nm_unit.toLowerCase());
+
+      if (unitCocok) {
+        // Mengambil jam saat ini berdasarkan zona waktu WIB (Asia/Jakarta)
+        const jamWib = parseInt(new Intl.DateTimeFormat('en-GB', {
+          timeZone: 'Asia/Jakarta',
+          hour: '2-digit',
+          hour12: false
+        }).format(new Date()), 10);
+
+        if (jamWib >= 6 && jamWib < 12 && unitCocok.qr_in) {
+          document.getElementById('qrHash').value = unitCocok.qr_in;
+          log(`🔑 <b>QR Check-In Otomatis Diisi (06.00-12.00 WIB):</b> <code>${unitCocok.qr_in}</code>`);
+        } else if (jamWib >= 12 && jamWib < 18 && unitCocok.qr_out) {
+          document.getElementById('qrHash').value = unitCocok.qr_out;
+          log(`🔑 <b>QR Check-Out Otomatis Diisi (12.00-18.00 WIB):</b> <code>${unitCocok.qr_out}</code>`);
+        } else {
+          document.getElementById('qrHash').value = '';
+          log(`⏰ <b>Di Luar Jam Presensi (${jamWib}:00 WIB):</b> Token QR dikosongkan. Pilih manual dari daftar unit jika tetap ingin uji coba.`);
+        }
+      }
+    }
+
+  } catch (error) {
+    log(`<span style="color: #ff5555;">❌ Error Koneksi:</span> ${error.message}`);
+  }
+}
+
+function cekRekapBulanan() {
+  const idPegawai = parseInt(val('userId'));
+  const sekarang = new Date();
+  const bulan = String(sekarang.getMonth() + 1).padStart(2, '0'); // '11'
+  const tahun = sekarang.getFullYear(); // 2026
+  const tanggalAwalBulan = `${tahun}-${bulan}-01`; // '2026-11-01'
+
+  callApiLive('POST', '/user/get_rekap_bulanan_v2', {
+    id: idPegawai,
+    date: tanggalAwalBulan
+  });
+}
 
 async function cekDataUnit() {
     const wadah = document.getElementById('wadah-unit');
@@ -239,34 +335,61 @@ async function cekDataUnit() {
             return;
         }
 
-        wadah.innerHTML = '';
+                wadah.innerHTML = '';
         daftar.forEach(u => {
-            wadah.innerHTML += `
-                <div style="border-bottom: 1px solid #ddd; padding: 8px 0;">
-                    <strong style="color: #0275d8;">[ID: ${u.id}] ${u.nm_unit}</strong><br>
-                    📍 Lat/Lng: ${u.lat}, ${u.long} (Radius: ${u.radius}m)<br>
-                    🔑 QR In: <code style="background:#eee;padding:2px 4px;">${u.qr_in}</code> | QR Out: <code style="background:#eee;padding:2px 4px;">${u.qr_out}</code>
-                </div>
-            `;
-        });
-    } catch (e) {
-        wadah.innerHTML = `<p style="color: red;">❌ Gagal memuat: ${e.message}</p>`;
-    }
-}
-    function filterDaftarUnit() {
-    const kataKunci = val('cariUnit').toLowerCase();
-    const wadah = document.getElementById('wadah-unit');
-    const itemUnit = wadah.getElementsByTagName('div');
+          const qrIn = u.qr_in || '-';
+          const qrOut = u.qr_out || '-';
+          const lat = u.lat || '';
+          const lng = u.long || '';
+          const nama = (u.nm_unit || 'Unit').replace(/'/g, "");
 
-    for (let i = 0; i < itemUnit.length; i++) {
+          wadah.innerHTML += `
+            <div class="unit-item" style="border-bottom: 1px solid #ddd; padding: 10px 0;">
+              <strong style="color: #0275d8;">[ID: ${u.id}] ${nama}</strong><br>
+              📍 Lat/Lng: ${lat}, ${lng} (Radius: ${u.radius}m)<br>
+              <div style="margin-top: 6px;">
+                <span onclick="pilihQrUnit('${qrIn}', 'QR In', '${nama}', '${lat}', '${lng}')" style="cursor: pointer; background: #e8f5e9; color: #1b5e20; border: 1px solid #a5d6a7; padding: 3px 8px; border-radius: 4px; font-size: 12px; display: inline-block; margin-right: 5px;">
+                  🔑 <b>QR In:</b> <code>${qrIn}</code> (Klik)
+                </span>
+                <span onclick="pilihQrUnit('${qrOut}', 'QR Out', '${nama}', '${lat}', '${lng}')" style="cursor: pointer; background: #f3e5f5; color: #4a148c; border: 1px solid #ce93d8; padding: 3px 8px; border-radius: 4px; font-size: 12px; display: inline-block;">
+                  🔑 <b>QR Out:</b> <code>${qrOut}</code> (Klik)
+                </span>
+              </div>
+            </div>
+          `;
+        });
+      } catch (e) {
+        wadah.innerHTML = `<p style="color: red;">❌ Gagal memuat: ${e.message}</p>`;
+      }
+    }
+
+    function pilihQrUnit(kodeQr, jenis, namaUnit, latUnit, lngUnit) {
+      if (!kodeQr || kodeQr === '-') {
+        log('⚠️ Kode QR tidak tersedia untuk unit ini.');
+        return;
+      }
+      document.getElementById('qrHash').value = kodeQr;
+      if (latUnit && lngUnit) {
+        document.getElementById('lat').value = latUnit;
+        document.getElementById('lng').value = lngUnit;
+      }
+      log(`✅ <b>${jenis}</b> (${namaUnit}) dipilih: <code>${kodeQr}</code> + Koordinat diisi.`);
+      document.getElementById('qrHash').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function filterDaftarUnit() {
+      const kataKunci = val('cariUnit').toLowerCase();
+      const wadah = document.getElementById('wadah-unit');
+      const itemUnit = wadah.getElementsByClassName('unit-item');
+      for (let i = 0; i < itemUnit.length; i++) {
         const teksItem = itemUnit[i].textContent || itemUnit[i].innerText;
         if (teksItem.toLowerCase().indexOf(kataKunci) > -1) {
-            itemUnit[i].style.display = "";
+          itemUnit[i].style.display = "";
         } else {
-            itemUnit[i].style.display = "none";
+          itemUnit[i].style.display = "none";
         }
+      }
     }
-}
 
 async function tampilkanBannerVisual() {
     const wadah = document.getElementById('wadah-banner');

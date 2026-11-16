@@ -47,7 +47,7 @@
     <h3>📍 2. Verifikasi Lokasi &amp; Presensi</h3>
     <div class="form-group">
         <label>ID Pegawai (User ID)</label>
-        <input type="text" id="userId" value="2682">
+        <input type="text" id="userId" placeholder="Otomatis terisi saat login...">
     </div>
     <div class="row">
         <div class="form-group">
@@ -114,10 +114,14 @@ const DEVICE_HEADERS = {
 };
 
 window.onload = function() {
-    const tokenTersimpan = localStorage.getItem('bearer_token');
-    if (tokenTersimpan) {
-        document.getElementById('auth_token').value = tokenTersimpan;
-    }
+  const tokenTersimpan = localStorage.getItem('bearer_token');
+  const idTersimpan = localStorage.getItem('saved_user_id');
+  if (tokenTersimpan) {
+    document.getElementById('auth_token').value = tokenTersimpan;
+  }
+  if (idTersimpan) {
+    document.getElementById('userId').value = idTersimpan;
+  }
 };
 
 function val(id) { return document.getElementById(id) ? document.getElementById(id).value.trim() : ""; }
@@ -149,7 +153,7 @@ async function prosesLoginV3() {
     }
   };
 
-  try {
+    try {
     const respons = await fetch(`${BASE_URL}/api_login_v3`, {
       method: 'POST',
       headers: DEVICE_HEADERS,
@@ -161,6 +165,13 @@ async function prosesLoginV3() {
       if (tokenDiterima) {
         localStorage.setItem('bearer_token', tokenDiterima);
         document.getElementById('auth_token').value = tokenDiterima;
+
+                const idPegawai = hasilJson.id || (hasilJson.data && hasilJson.data.user && hasilJson.data.user.id) || (hasilJson.data && hasilJson.data.id) || (hasilJson.user && hasilJson.user.id);
+        if (idPegawai) {
+          localStorage.setItem('saved_user_id', idPegawai);
+          document.getElementById('userId').value = idPegawai;
+        }
+
         alert('✅ Login Berhasil!\n\nRespon Lengkap Server:\n' + JSON.stringify(hasilJson, null, 2));
       } else {
         alert('⚠️ Login 200 OK, periksa struktur token:\n' + JSON.stringify(hasilJson, null, 2));
@@ -174,9 +185,11 @@ async function prosesLoginV3() {
 }
 
 function hapusTokenSesi() {
-    localStorage.removeItem('bearer_token');
-    document.getElementById('auth_token').value = '';
-    alert('🗑️ Token sesi lokal telah dihapus.');
+  localStorage.removeItem('bearer_token');
+  localStorage.removeItem('saved_user_id');
+  document.getElementById('auth_token').value = '';
+  document.getElementById('userId').value = '';
+  alert('🗑️ Token sesi dan ID Pegawai telah dihapus.');
 }
 
 function log(msg) {

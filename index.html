@@ -228,8 +228,12 @@ async function tempelQrClipboard() {
     } catch (err) { log('❌ Gagal akses clipboard. Ketik manual.'); }
 }
 
-function verifikasiLokasi() { callApiLive('POST', '/user/verifikasi_loc', { id: parseInt(val('userId')), latitude: val('lat'), longitude: val('lng') }); }
-function kirimQrIn() { const tgl = getTanggalLokal(); const token = val('qrHash'); if(!token) { log('⚠️ Isi Token Hash QR terlebih dahulu!'); return; } callApiLive('POST', '/user/qr_in', { id: parseInt(val('userId')), date: tgl, payload_in: `${tgl}-${token}` }); }
+function kirimQrIn() { const tgl = getTanggalLokal(); const token = val('qrHash'); if (!token) { log(`⚠️ Isi Token Hash QR terlebih dahulu!`); return; }
+  const tglSaja = Array.isArray(tgl) ? tgl[0] : String(tgl).split(',')[0];
+  callApiLive('POST', '/user/qr_in', { id: parseInt(val('userId')), qr_in: token, date: tgl, payload_in: `${tglSaja}fg${token}` }); }
+function kirimQrOut() { const tgl = getTanggalLokal(); const token = val('qrHash'); if (!token) { log(`⚠️ Isi Token Hash QR terlebih dahulu!`); return; }
+  const tglSaja = Array.isArray(tgl) ? tgl[0] : String(tgl).split(',')[0];
+  callApiLive('POST', '/user/qr_out', { id: parseInt(val('userId')), qr_out: token, date: tgl, payload_out: `${tglSaja}fg${token}` }); }
 function kirimQrOut() { const tgl = getTanggalLokal(); const token = val('qrHash'); if(!token) { log('⚠️ Isi Token Hash QR terlebih dahulu!'); return; } callApiLive('POST', '/user/qr_out', { id: parseInt(val('userId')), date: tgl, payload_out: `${tgl}-${token}` }); }
 function generateTokenQr() { callApiLive('GET', `/user/generate-token-qr?id=${val('userId')}`); }
 function cekRekapHarianAdmin() { window.open('https://baritotimurkab.go.id', '_blank'); }
